@@ -294,3 +294,12 @@ func shutDown(db *gorm.DB) {
 		return
 	}
 }
+
+//!!!!!!!
+//Постгрес должен так выглядеть для работы
+//create table media (
+//track_id SERIAL PRIMARY KEY,
+//artist VARCHAR(255) NOT NULL,
+//track VARCHAR(255) NOT NULL,
+//url TEXT NOT NULL
+//);
