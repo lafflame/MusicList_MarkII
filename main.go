@@ -15,6 +15,7 @@ import (
 	"strings"
 )
 
+// Структура таблицы в БД
 type media struct {
 	TrackID uint `gorm:"primary_key"`
 	Artist  string
@@ -23,6 +24,7 @@ type media struct {
 }
 
 func main() {
+	// Подключение к Постгрес, используйте свои данные
 	dsn := "host=localhost user=postgres password=YOURPASSWORD dbname=mydb port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	db.AutoMigrate(&media{}) // Создание БД, если её ещё нет
@@ -44,96 +46,102 @@ func menu(db *gorm.DB) {
 
 	switch choice {
 	case 1:
-		output(db)
+		output(db) // Вывод всех треков
 	case 2:
-		add(db)
+		add(db) // Добавление трека в медиатеку
 	case 3:
-		del(db)
+		del(db) // Удаление трека из медиатеки
 	case 4:
-		changing(db)
+		changing(db) // Изменение трека по ID
 	case 5:
-		shuffleAndOutput(db)
+		shuffleAndOutput(db) // Перемешивание треков и вывод
 	case 6:
-		playYouTubeClip()
+		playYouTubeClip() // Поиск клипа на YouTube
 	case 7:
-		showStatistics(db)
+		showStatistics(db) // Вывод статистики на экран
 	case 8:
-		searching(db)
-	case 10:
+		searching(db) // Поиск трека по ID
+	case 10: // Выход из программы
 		fmt.Println("Хорошего дня!")
 		return
-	case 228:
+	case 228: // Скрытая функция - парсинг со страницы Яндекс Музыки
 		gettingInfo() // Скрытая фича
-	default:
+	default: // В случае неправильнного ввода пользователя - перезапуск
 		fmt.Println("Неправильный выбор")
 		menu(db)
 	}
-	shutDown(db)
+	shutDown(db) // Предложение о выходе
 }
 
+// Добавление трека в медиатеку
 func add(db *gorm.DB) {
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(os.Stdin) // Объявление буфера
 
 	fmt.Println("Введите исполнителя:")
-	artist, _ := reader.ReadString('\n')
+	artist, _ := reader.ReadString('\n') // Считываем имя исполнителя
 	artist = strings.TrimSpace(artist)
 
 	fmt.Println("Введите название трека:")
-	track, _ := reader.ReadString('\n')
+	track, _ := reader.ReadString('\n') // Считываем название трека
 	track = strings.TrimSpace(track)
 
 	fmt.Println("Введите ссылку на клип:")
-	url, _ := reader.ReadString('\n')
+	url, _ := reader.ReadString('\n') // Считываем ссылку на клип
 	url = strings.TrimSpace(url)
 
-	db.Create(&media{Track: track, Artist: artist, URL: url})
+	db.Create(&media{Track: track, Artist: artist, URL: url}) // Добавляем данные
 }
 
+// Удаление трека
 func del(db *gorm.DB) {
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(os.Stdin) // Объявление буфера для ввода
 
 	fmt.Println("Введите ID исполнителя:")
-	id, _ := reader.ReadString('\n')
-	id = strings.TrimSpace(id)
-	db.Delete(&media{}, id)
+	id, _ := reader.ReadString('\n') // Пользовательский ввод
+	id = strings.TrimSpace(id)       // Удаление пробелов
+	db.Delete(&media{}, id)          // Удаление по ID
 }
 
+// Вывод всех треков на экран
 func output(db *gorm.DB) {
-	var tracks []media
-	db.Find(&tracks)
+	var tracks []media // Объявление массива для треков
+	db.Find(&tracks)   // Поиск треков
 
 	fmt.Println("\nID | Исполнитель | Название трека | Ссылка на клип\n")
-	for _, track := range tracks {
+	for _, track := range tracks { // Вывод всех треков
 		fmt.Printf("%d: %s - %s  |  %s\n", track.TrackID, track.Artist, track.Track, track.URL)
 	}
 	fmt.Print("\n\n")
 }
 
+// Изменение трека по ID
 func changing(db *gorm.DB) {
 	var id int
 	fmt.Println("Введите ID для изменения трека:")
-	fmt.Scan(&id)
-	var artist, track string
-	reader := bufio.NewReader(os.Stdin)
+	fmt.Scan(&id)                       // Сканирование ID трека для изменения
+	var artist, track string            // Объявление новых переменных
+	reader := bufio.NewReader(os.Stdin) // Объявление буфера для пользовательского ввода
 
 	fmt.Println("Введите новое имя исполнителя:")
-	artist, _ = reader.ReadString('\n')
+	artist, _ = reader.ReadString('\n') // Новое имя исполнителя
 	artist = strings.TrimSpace(artist)
 
 	fmt.Println("Введите новое название трека:")
-	track, _ = reader.ReadString('\n')
+	track, _ = reader.ReadString('\n') // Новое название трека
 	track = strings.TrimSpace(track)
 
 	fmt.Println("Введите новую ссылку на клип:")
-	url, _ := reader.ReadString('\n')
+	url, _ := reader.ReadString('\n') // Новая ссылка на клип
 	url = strings.TrimSpace(url)
 
+	// Изменение старых данных на новые
 	db.Model(&media{}).Where("track_id = ?", id).Updates(media{Artist: artist, Track: track, URL: url})
 }
 
+// Перемешивание треков и вывод
 func shuffleAndOutput(db *gorm.DB) {
-	var tracks []media
-	db.Find(&tracks)
+	var tracks []media // Объявление массива для треков
+	db.Find(&tracks)   // Поиск треков
 
 	// Перемешивание треков
 	rand.Shuffle(len(tracks), func(i, j int) {
@@ -148,10 +156,12 @@ func shuffleAndOutput(db *gorm.DB) {
 	fmt.Print("\n\n")
 }
 
+// Вспомогательная функция для открытия браузера
 func openBrowser(url string) error {
 	var cmd string
 	var args []string
 
+	// Автоматический выбор системы
 	switch runtime.GOOS {
 	case "windows":
 		cmd = "cmd"
@@ -169,10 +179,11 @@ func openBrowser(url string) error {
 // Поиск трека на ютубе
 func playYouTubeClip() {
 	fmt.Println("Введите название трека или исполнителя для поиска на YouTube:")
-	reader := bufio.NewReader(os.Stdin)
-	query, _ := reader.ReadString('\n')
+	reader := bufio.NewReader(os.Stdin) // Объявление буфера
+	query, _ := reader.ReadString('\n') // Объявление запроса
 	query = strings.TrimSpace(query)
 
+	// Проверка на пустой запрос
 	if query == "" {
 		fmt.Println("Запрос не может быть пустым!")
 		return
@@ -188,9 +199,10 @@ func playYouTubeClip() {
 	}
 }
 
+// Вывод статистики по медиатеке
 func showStatistics(db *gorm.DB) {
-	var tracks []media
-	db.Find(&tracks) // Получаем все треки из базы данных
+	var tracks []media // Объявление массива треков
+	db.Find(&tracks)   // Получаем все треки из базы данных
 
 	// Подсчет статистики
 	trackCount := len(tracks)            // Общее количество треков
@@ -227,8 +239,9 @@ func showStatistics(db *gorm.DB) {
 	}
 }
 
+// Поиск трека
 func searching(db *gorm.DB) {
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(os.Stdin) // Объявление буфера
 
 	fmt.Println("Введите название трека или имя исполнителя для поиска:")
 	query, _ := reader.ReadString('\n')
@@ -283,6 +296,7 @@ func gettingInfo() {
 	fmt.Println(trackName)
 }
 
+// Функция для незавершения программы
 func shutDown(db *gorm.DB) {
 	var choice string
 	fmt.Println("Вы хотите продолжить? y/n")
@@ -294,12 +308,3 @@ func shutDown(db *gorm.DB) {
 		return
 	}
 }
-
-//!!!!!!!
-//Постгрес должен так выглядеть для работы
-//create table media (
-//track_id SERIAL PRIMARY KEY,
-//artist VARCHAR(255) NOT NULL,
-//track VARCHAR(255) NOT NULL,
-//url TEXT NOT NULL
-//);
