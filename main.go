@@ -1,3 +1,12 @@
+/*
+Package main предоставляет функционал для управления медиатекой музыкальных треков.
+
+Основные возможности:
+- Добавление, удаление и изменение треков.
+- Поиск треков по названию или исполнителю.
+- Перемешивание треков и вывод статистики.
+- Поиск клипов на YouTube.
+*/
 package main
 
 import (
@@ -16,7 +25,7 @@ import (
 )
 
 // Структура таблицы в БД
-type media struct {
+type Media struct {
 	TrackID uint `gorm:"primary_key"`
 	Artist  string
 	Track   string
@@ -25,9 +34,9 @@ type media struct {
 
 func main() {
 	// Подключение к Постгрес, используйте свои данные
-	dsn := "host=localhost user=postgres password=YOURPASSWORD dbname=mydb port=5432 sslmode=disable"
+	dsn := "host=localhost user=postgres password=0311 dbname=mydb port=5432 sslmode=disable"
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	db.AutoMigrate(&media{}) // Создание БД, если её ещё нет
+	db.AutoMigrate(&Media{}) // Создание БД, если её ещё нет
 	if err != nil {
 		log.Fatal("failed to connect to database", err)
 	}
@@ -40,9 +49,6 @@ func menu(db *gorm.DB) {
 		"\n4.Изменить трек по ID\n5.Перемешивание треков\n6.Поиск клипа на YouTube" +
 		"\n7.Показать статистику\n8.Поиск треков\n")
 	fmt.Scan(&choice)
-
-	var null string
-	fmt.Scanln(&null) // Очистка буфера
 
 	switch choice {
 	case 1:
@@ -89,7 +95,7 @@ func add(db *gorm.DB) {
 	url, _ := reader.ReadString('\n') // Считываем ссылку на клип
 	url = strings.TrimSpace(url)
 
-	db.Create(&media{Track: track, Artist: artist, URL: url}) // Добавляем данные
+	db.Create(&Media{Track: track, Artist: artist, URL: url}) // Добавляем данные
 }
 
 // Удаление трека
@@ -99,12 +105,12 @@ func del(db *gorm.DB) {
 	fmt.Println("Введите ID исполнителя:")
 	id, _ := reader.ReadString('\n') // Пользовательский ввод
 	id = strings.TrimSpace(id)       // Удаление пробелов
-	db.Delete(&media{}, id)          // Удаление по ID
+	db.Delete(&Media{}, id)          // Удаление по ID
 }
 
 // Вывод всех треков на экран
 func output(db *gorm.DB) {
-	var tracks []media // Объявление массива для треков
+	var tracks []Media // Объявление массива для треков
 	db.Find(&tracks)   // Поиск треков
 
 	fmt.Println("\nID | Исполнитель | Название трека | Ссылка на клип\n")
@@ -135,12 +141,12 @@ func changing(db *gorm.DB) {
 	url = strings.TrimSpace(url)
 
 	// Изменение старых данных на новые
-	db.Model(&media{}).Where("track_id = ?", id).Updates(media{Artist: artist, Track: track, URL: url})
+	db.Model(&Media{}).Where("track_id = ?", id).Updates(Media{Artist: artist, Track: track, URL: url})
 }
 
 // Перемешивание треков и вывод
 func shuffleAndOutput(db *gorm.DB) {
-	var tracks []media // Объявление массива для треков
+	var tracks []Media // Объявление массива для треков
 	db.Find(&tracks)   // Поиск треков
 
 	// Перемешивание треков
@@ -201,7 +207,7 @@ func playYouTubeClip() {
 
 // Вывод статистики по медиатеке
 func showStatistics(db *gorm.DB) {
-	var tracks []media // Объявление массива треков
+	var tracks []Media // Объявление массива треков
 	db.Find(&tracks)   // Получаем все треки из базы данных
 
 	// Подсчет статистики
@@ -248,7 +254,7 @@ func searching(db *gorm.DB) {
 	query = strings.TrimSpace(query)
 
 	// Ищем треки, где название трека или имя исполнителя содержат запрос
-	var tracks []media
+	var tracks []Media
 	result := db.Where("artist ILIKE ? OR track ILIKE ?", "%"+query+"%", "%"+query+"%").Find(&tracks)
 
 	// Проверяем, есть ли ошибки
