@@ -1,0 +1,127 @@
+basePath: /api
+definitions:
+  main.Media:
+    properties:
+      artist:
+        type: string
+      track:
+        type: string
+      track_id:
+        type: integer
+      url:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API для управления личной музыкальной коллекцией
+  title: Music Library API
+  version: "1.0"
+paths:
+  /statistics:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Статистика медиатеки
+      tags:
+      - statistics
+  /tracks:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Media'
+            type: array
+      summary: Получить все треки
+      tags:
+      - tracks
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные трека
+        in: body
+        name: track
+        required: true
+        schema:
+          $ref: '#/definitions/main.Media'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/main.Media'
+      summary: Добавить трек
+      tags:
+      - tracks
+  /tracks/{id}:
+    delete:
+      parameters:
+      - description: ID трека
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK
+      summary: Удалить трек
+      tags:
+      - tracks
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID трека
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Новые данные
+        in: body
+        name: track
+        required: true
+        schema:
+          $ref: '#/definitions/main.Media'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.Media'
+      summary: Обновить трек
+      tags:
+      - tracks
+  /tracks/search:
+    get:
+      parameters:
+      - description: Название или исполнитель
+        in: query
+        name: query
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/main.Media'
+            type: array
+      summary: Поиск треков
+      tags:
+      - tracks
+swagger: "2.0"
