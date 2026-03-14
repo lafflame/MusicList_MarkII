@@ -1,0 +1,22 @@
+# env с паролями
+.env
+
+# бинарник после go build
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/bin/
+
+# кэш go
+vendor/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# os
+.DS_Store
+Thumbs.db
