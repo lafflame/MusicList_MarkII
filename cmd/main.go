@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 
 	_ "MusicList_MarkII/docs"
 	"MusicList_MarkII/internal/config"
@@ -26,27 +27,21 @@ func main() {
 		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable client_encoding=UTF8",
 		cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort,
 	)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		log.Fatal("failed to connect to database:", err)
-	}
+	db := connectDB(dsn)
+
 	if err := db.AutoMigrate(&domain.Media{}, &domain.Playlist{}); err != nil {
 		log.Fatal("migration error:", err)
 	}
 
-	// Repos
 	mediaRepo := repository.NewMediaRepo(db)
 	playlistRepo := repository.NewPlaylistRepo(db)
 
-	// Services
 	mediaService := service.NewMediaService(mediaRepo)
 	playlistService := service.NewPlaylistService(playlistRepo)
 
-	// Handlers
 	mediaHandler := handler.NewMediaHandler(mediaService)
 	playlistHandler := handler.NewPlaylistHandler(playlistService)
 
-	// Router
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 
@@ -67,4 +62,19 @@ func main() {
 
 	fmt.Println("Swagger UI: http://localhost:8080/swagger/index.html")
 	r.Run(":8080")
+}
+
+func connectDB(dsn string) *gorm.DB {
+	var db *gorm.DB
+	var err error
+	for i := 0; i < 10; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		if err == nil {
+			return db
+		}
+		log.Printf("waiting for database... (%d/10)", i+1)
+		time.Sleep(2 * time.Second)
+	}
+	log.Fatal("failed to connect to database:", err)
+	return nil
 }
