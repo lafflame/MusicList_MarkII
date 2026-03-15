@@ -52,8 +52,8 @@ docker-compose up --build
 
 После запуска:
 - Фронтенд: `http://localhost:3000`
-- Бэкенд: `http://localhost:8081`
-- Swagger: `http://localhost:8081/swagger/index.html`
+- Бэкенд: `http://localhost:8080`
+- Swagger: `http://localhost:8080/swagger/index.html`
 
 ## Локальный запуск (без Docker)
 
