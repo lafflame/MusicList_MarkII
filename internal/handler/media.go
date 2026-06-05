@@ -19,6 +19,7 @@ func (h *MediaHandler) Register(r *gin.Engine) {
 	api := r.Group("/api")
 	api.GET("/tracks/search", h.Search)
 	api.GET("/tracks/filter", h.Filter)
+	api.GET("/tracks/shuffle", h.Shuffle)
 	api.GET("/tracks", h.GetAll)
 	api.POST("/tracks", h.Add)
 	api.PUT("/tracks/:id", h.Update)
@@ -89,4 +90,13 @@ func (h *MediaHandler) Filter(c *gin.Context) {
 
 func (h *MediaHandler) Statistics(c *gin.Context) {
 	c.JSON(200, h.service.GetStatistics())
+}
+
+func (h *MediaHandler) Shuffle(c *gin.Context) {
+	tracks, err := h.service.Shuffle()
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, tracks)
 }

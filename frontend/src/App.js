@@ -46,6 +46,7 @@ import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import ShuffleIcon from "@mui/icons-material/Shuffle";
 
 const darkTheme = createTheme({
   palette: {
@@ -63,6 +64,7 @@ export default function App() {
   const [tab, setTab] = useState(0);
   const [tracks, setTracks] = useState([]);
   const [filteredTracks, setFilteredTracks] = useState([]);
+  const [shuffled, setShuffled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [stats, setStats] = useState(null);
@@ -83,6 +85,7 @@ export default function App() {
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
   const [filterActive, setFilterActive] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState({ open: false, label: "", onConfirm: null });
 
   useEffect(() => { fetchTracks(); }, []);
 
@@ -129,12 +132,18 @@ export default function App() {
     } catch { showSnackbar("Ошибка добавления", "error"); }
   };
 
-  const handleDeleteTrack = async (id) => {
-    try {
-      await axios.delete(`${API}/tracks/${id}`);
-      showSnackbar("Трек удалён", "success");
-      fetchTracks();
-    } catch { showSnackbar("Ошибка удаления", "error"); }
+  const handleDeleteTrack = (id) => {
+    setConfirmDelete({
+      open: true,
+      label: "Удалить трек? Это действие нельзя отменить.",
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${API}/tracks/${id}`);
+          showSnackbar("Трек удалён", "success");
+          fetchTracks();
+        } catch { showSnackbar("Ошибка удаления", "error"); }
+      },
+    });
   };
 
   const handleEditTrack = async () => {
@@ -162,6 +171,7 @@ export default function App() {
       const res = await axios.get(`${API}/tracks/filter?${params.toString()}`);
       setFilteredTracks(res.data || []);
       setFilterActive(true);
+      setShuffled(false);
       showSnackbar(`Найдено ${res.data?.length || 0} треков`, "success");
     } catch { showSnackbar("Ошибка фильтрации", "error"); }
   };
@@ -171,6 +181,21 @@ export default function App() {
     setFilterTo("");
     setFilteredTracks(tracks);
     setFilterActive(false);
+  };
+
+  const handleShuffle = async () => {
+    try {
+      const res = await axios.get(`${API}/tracks/shuffle`);
+      setFilteredTracks(res.data || []);
+      setShuffled(true);
+      setFilterActive(false);
+      showSnackbar("Треки перемешаны!", "success");
+    } catch { showSnackbar("Ошибка перемешивания", "error"); }
+  };
+
+  const handleResetShuffle = () => {
+    setFilteredTracks(tracks);
+    setShuffled(false);
   };
 
   const handleCreatePlaylist = async () => {
@@ -184,16 +209,22 @@ export default function App() {
     } catch { showSnackbar("Ошибка создания плейлиста", "error"); }
   };
 
-  const handleDeletePlaylist = async (id) => {
-    try {
-      await axios.delete(`${API}/playlists/${id}`);
-      showSnackbar("Плейлист удалён", "success");
-      if (selectedPlaylist?.playlist_id === id) {
-        setSelectedPlaylist(null);
-        setPlaylistTracks([]);
-      }
-      fetchPlaylists();
-    } catch { showSnackbar("Ошибка удаления плейлиста", "error"); }
+  const handleDeletePlaylist = (id) => {
+    setConfirmDelete({
+      open: true,
+      label: "Удалить плейлист? Это действие нельзя отменить.",
+      onConfirm: async () => {
+        try {
+          await axios.delete(`${API}/playlists/${id}`);
+          showSnackbar("Плейлист удалён", "success");
+          if (selectedPlaylist?.playlist_id === id) {
+            setSelectedPlaylist(null);
+            setPlaylistTracks([]);
+          }
+          fetchPlaylists();
+        } catch { showSnackbar("Ошибка удаления плейлиста", "error"); }
+      },
+    });
   };
 
   const handleRenamePlaylist = async () => {
@@ -282,7 +313,15 @@ export default function App() {
                 {filterActive && <Chip label={`${filteredTracks.length} треков`} size="small" color="secondary" />}
               </Box>
             </Paper>
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mb: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<ShuffleIcon />}
+                onClick={shuffled ? handleResetShuffle : handleShuffle}
+                sx={{ borderColor: "#7c4dff", color: "#7c4dff", fontWeight: 700 }}
+              >
+                {shuffled ? "Сбросить" : "Перемешать"}
+              </Button>
               <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenAdd(true)}
                 sx={{ background: "linear-gradient(45deg, #7c4dff, #ff4081)", fontWeight: 700 }}>
                 Добавить трек
@@ -531,6 +570,21 @@ export default function App() {
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setOpenAddToPlaylist(false)}>Отмена</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={confirmDelete.open} onClose={() => setConfirmDelete({ ...confirmDelete, open: false })}
+        PaperProps={{ sx: { background: "#141414", minWidth: 340 } }}>
+        <DialogTitle sx={{ fontWeight: 700 }}>Подтверждение</DialogTitle>
+        <DialogContent>
+          <Typography variant="body1">{confirmDelete.label}</Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setConfirmDelete({ ...confirmDelete, open: false })}>Отмена</Button>
+          <Button variant="contained" onClick={() => { confirmDelete.onConfirm(); setConfirmDelete({ ...confirmDelete, open: false }); }}
+            sx={{ background: "linear-gradient(45deg, #ff4081, #d32f2f)" }}>
+            Удалить
+          </Button>
         </DialogActions>
       </Dialog>
 

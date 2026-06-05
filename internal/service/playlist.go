@@ -3,6 +3,8 @@ package service
 import (
 	"MusicList_MarkII/internal/domain"
 	"MusicList_MarkII/internal/repository"
+	"errors"
+	"strings"
 )
 
 type PlaylistService struct {
@@ -22,10 +24,16 @@ func (s *PlaylistService) GetTracks(id string) (*domain.Playlist, error) {
 }
 
 func (s *PlaylistService) Create(p *domain.Playlist) error {
+	if strings.TrimSpace(p.Name) == "" {
+		return errors.New("playlist name is required")
+	}
 	return s.repo.Create(p)
 }
 
 func (s *PlaylistService) Rename(id, name string) error {
+	if strings.TrimSpace(name) == "" {
+		return errors.New("playlist name is required")
+	}
 	return s.repo.Rename(id, name)
 }
 

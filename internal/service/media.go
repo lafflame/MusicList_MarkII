@@ -3,7 +3,9 @@ package service
 import (
 	"MusicList_MarkII/internal/domain"
 	"MusicList_MarkII/internal/repository"
+	"errors"
 	"math/rand"
+	"strings"
 )
 
 type MediaService struct {
@@ -27,10 +29,16 @@ func (s *MediaService) FilterByDate(from, to string) ([]domain.Media, error) {
 }
 
 func (s *MediaService) Add(m *domain.Media) error {
+	if strings.TrimSpace(m.Artist) == "" || strings.TrimSpace(m.Track) == "" {
+		return errors.New("artist and track name are required")
+	}
 	return s.repo.Create(m)
 }
 
 func (s *MediaService) Update(id string, m *domain.Media) error {
+	if strings.TrimSpace(m.Artist) == "" || strings.TrimSpace(m.Track) == "" {
+		return errors.New("artist and track name are required")
+	}
 	return s.repo.Update(id, m)
 }
 
