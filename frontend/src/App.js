@@ -47,6 +47,8 @@ import QueueMusicIcon from "@mui/icons-material/QueueMusic";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import ShuffleIcon from "@mui/icons-material/Shuffle";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import CloseIcon from "@mui/icons-material/Close";
 
 const darkTheme = createTheme({
   palette: {
@@ -86,6 +88,7 @@ export default function App() {
   const [filterTo, setFilterTo] = useState("");
   const [filterActive, setFilterActive] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState({ open: false, label: "", onConfirm: null });
+  const [player, setPlayer] = useState(null);
 
   useEffect(() => { fetchTracks(); }, []);
 
@@ -279,7 +282,7 @@ export default function App() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ mt: 3 }}>
+      <Container maxWidth="lg" sx={{ mt: 3, pb: player ? 40 : 3 }}>
         <Tabs value={tab} onChange={handleTabChange} sx={{ mb: 3, "& .MuiTab-root": { fontWeight: 600 } }}>
           <Tab label="Коллекция" />
           <Tab label="Поиск" icon={<SearchIcon />} iconPosition="start" />
@@ -329,7 +332,8 @@ export default function App() {
             </Box>
             <TrackTable tracks={filteredTracks} onDelete={handleDeleteTrack}
               onEdit={(t) => { setEditTrack(t); setOpenEdit(true); }}
-              onAddToPlaylist={(t) => { setSelectedTrackForPlaylist(t); setOpenAddToPlaylist(true); }} />
+              onAddToPlaylist={(t) => { setSelectedTrackForPlaylist(t); setOpenAddToPlaylist(true); }}
+              onPlay={(t) => setPlayer(t)} />
           </Box>
         )}
 
@@ -349,7 +353,8 @@ export default function App() {
             {searchResults.length > 0 && (
               <TrackTable tracks={searchResults} onDelete={handleDeleteTrack}
                 onEdit={(t) => { setEditTrack(t); setOpenEdit(true); }}
-                onAddToPlaylist={(t) => { setSelectedTrackForPlaylist(t); setOpenAddToPlaylist(true); }} />
+                onAddToPlaylist={(t) => { setSelectedTrackForPlaylist(t); setOpenAddToPlaylist(true); }}
+                onPlay={(t) => setPlayer(t)} />
             )}
           </Box>
         )}
@@ -591,11 +596,52 @@ export default function App() {
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
+
+      {player && (
+        <Box sx={{
+          position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1300,
+          background: "#0d0d0d",
+          borderTop: "2px solid #7c4dff",
+          display: "flex", alignItems: "center", gap: 3, p: 2,
+        }}>
+          <Box sx={{ flex: 1, minWidth: 0, pl: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, color: "#7c4dff", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {player.artist}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "#aaa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {player.track}
+            </Typography>
+          </Box>
+          {getYouTubeEmbedUrl(player.url) ? (
+            <iframe
+              width="448" height="300"
+              src={getYouTubeEmbedUrl(player.url)}
+              allow="autoplay; encrypted-media"
+              allowFullScreen
+              style={{ border: "none", borderRadius: 8, flexShrink: 0 }}
+              title={`${player.artist} — ${player.track}`}
+            />
+          ) : (
+            <Typography variant="body2" sx={{ color: "#666", px: 2 }}>
+              Нет YouTube-ссылки — добавьте URL трека
+            </Typography>
+          )}
+          <IconButton onClick={() => setPlayer(null)} sx={{ color: "#666", "&:hover": { color: "#fff" } }}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      )}
     </ThemeProvider>
   );
 }
 
-function TrackTable({ tracks, onDelete, onEdit, onAddToPlaylist }) {
+function getYouTubeEmbedUrl(url) {
+  if (!url) return null;
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1` : null;
+}
+
+function TrackTable({ tracks, onDelete, onEdit, onAddToPlaylist, onPlay }) {
   return (
     <TableContainer component={Paper} sx={{ background: "#141414", borderRadius: 2 }}>
       <Table>
@@ -607,6 +653,7 @@ function TrackTable({ tracks, onDelete, onEdit, onAddToPlaylist }) {
             <TableCell>Добавлен</TableCell>
             <TableCell>Ссылка</TableCell>
             <TableCell>YouTube</TableCell>
+            <TableCell>Играть</TableCell>
             <TableCell align="right">Действия</TableCell>
           </TableRow>
         </TableHead>
@@ -635,6 +682,13 @@ function TrackTable({ tracks, onDelete, onEdit, onAddToPlaylist }) {
                   </svg>
                 </IconButton>
               </TableCell>
+              <TableCell>
+                <IconButton size="small" onClick={() => onPlay(track)}
+                  sx={{ color: getYouTubeEmbedUrl(track.url) ? "#4caf50" : "#444" }}
+                  disabled={!track.url}>
+                  <PlayArrowIcon fontSize="small" />
+                </IconButton>
+              </TableCell>
               <TableCell align="right">
                 <IconButton onClick={() => onAddToPlaylist(track)} size="small" sx={{ color: "#00bcd4", mr: 0.5 }}>
                   <PlaylistAddIcon fontSize="small" />
@@ -650,7 +704,7 @@ function TrackTable({ tracks, onDelete, onEdit, onAddToPlaylist }) {
           ))}
           {tracks.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} align="center" sx={{ color: "#666", py: 4 }}>
+              <TableCell colSpan={8} align="center" sx={{ color: "#666", py: 4 }}>
                 Треки не найдены
               </TableCell>
             </TableRow>
